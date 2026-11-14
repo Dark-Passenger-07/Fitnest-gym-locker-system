@@ -1,0 +1,26 @@
+{
+  "name": "fitnest-gym-locker-system",
+  "version": "1.0.0",
+  "description": "FitNest Gym Locker Management System - Express and SQLite backend",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "keywords": [
+    "gym",
+    "locker-management",
+    "express",
+    "sqlite"
+  ],
+  "author": "FitNest Team",
+  "license": "ISC",
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}
+

@@ -1,5 +1,24 @@
+# Dependencies
 node_modules/
-data/
+
+# Environment
 .env
+.env.*
+
+# Local SQLite databases (ignored by Git per contract)
+data/*.db
+data/*.db-*
+data/*.sqlite
 *.db
 *.sqlite
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS and Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
