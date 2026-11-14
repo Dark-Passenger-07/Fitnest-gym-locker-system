@@ -24,3 +24,4 @@ router.get("/:id", getMemberById);
 router.post("/", createMember);
 
 module.exports = router;
+
