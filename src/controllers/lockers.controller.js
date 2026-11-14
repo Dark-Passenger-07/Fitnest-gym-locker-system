@@ -17,6 +17,7 @@
 
 const db = require("../db/database");
 const auditService = require("../services/lockerAudit.service");
+const lockerSearch = require("../services/lockerSearch");
 
 // ---------------------------------------------------------------------------
 // Helper: parse and validate a positive-integer route param
@@ -34,16 +35,12 @@ async function getAllLockers(req, res, next) {
   try {
     const { floor } = req.query;
 
-    if (floor !== undefined && floor.trim() !== "") {
-      // Delegate to Nevanesh's service (dependency – must be present)
-      // Expected export: module.exports = { searchByFloor }
-      //   searchByFloor(floor: string) => locker[]
-      const lockerSearch = require("../services/lockerSearch");
-      const lockers = lockerSearch.searchByFloor(floor.trim());
+    if (floor !== undefined) {
+      const lockers = lockerSearch.getLockers(floor);
       return res.status(200).json(lockers);
     }
 
-    const lockers = db.prepare(`SELECT * FROM lockers`).all();
+    const lockers = db.prepare(`SELECT * FROM lockers ORDER BY id ASC`).all();
     return res.status(200).json(lockers);
   } catch (err) {
     next(err);

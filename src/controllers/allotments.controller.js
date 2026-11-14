@@ -20,17 +20,12 @@
  * - returned_at
  */
 
-let defaultDb = null;
-try {
-  defaultDb = require("../db/database");
-} catch {
-  // Gracefully handle if database.js is not yet merged
-}
+const db = require("../db/database");
 
 async function getAllAllotments(req, res, next) {
   try {
-    const db = (req && req.app && req.app.locals && req.app.locals.db) || defaultDb;
-    if (!db) {
+    const activeDb = (req && req.app && req.app.locals && req.app.locals.db) || db;
+    if (!activeDb) {
       throw new Error("Database connection is not available.");
     }
 
@@ -50,13 +45,10 @@ async function getAllAllotments(req, res, next) {
       ORDER BY a.id ASC
     `;
 
-    const allotments = db.prepare(query).all();
+    const allotments = activeDb.prepare(query).all();
     return res.status(200).json(allotments);
   } catch (err) {
-    if (typeof next === "function") {
-      return next(err);
-    }
-    return res.status(500).json({ error: "Failed to retrieve allotments." });
+    next(err);
   }
 }
 

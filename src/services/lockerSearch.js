@@ -9,43 +9,42 @@
  * Returns an array containing locker records with fields: id, name, floor, status.
  */
 
-// Attempt to load shared database connection if available
-let defaultDb = null;
-try {
-  defaultDb = require("../db/database");
-} catch {
-  // Gracefully handle environments where database.js is not yet merged
-}
+const defaultDb = require("../db/database");
 
 /**
  * Retrieves lockers filtered optionally by floor.
+ * Supports flexible parameter signatures:
+ *   getLockers() -> all lockers using shared db
+ *   getLockers(floor) -> filtered lockers using shared db
+ *   getLockers(db, floor) -> filtered lockers using custom db
+ *   getLockers(floor, db) -> filtered lockers using custom db
  *
- * @param {import("better-sqlite3").Database|string} [dbOrFloor] - Target DB instance or optional floor if DB omitted
- * @param {string} [maybeFloor] - Optional floor when DB is passed as first argument
+ * @param {import("better-sqlite3").Database|string} [arg1] - Database instance or floor string
+ * @param {import("better-sqlite3").Database|string} [arg2] - Floor string or database instance
  * @returns {Array<{id: number, name: string, floor: string, status: string}>} Array of lockers ordered by id ASC
  */
-function getLockers(dbOrFloor, maybeFloor) {
-  let targetDb;
-  let floor;
+function getLockers(arg1, arg2) {
+  let targetDb = defaultDb;
+  let floor = undefined;
 
-  // Polymorphic signature handling:
-  // Signature 1: getLockers(db, floor)
-  // Signature 2: getLockers(floor) - uses shared defaultDb
-  if (dbOrFloor && typeof dbOrFloor.prepare === "function") {
-    targetDb = dbOrFloor;
-    floor = maybeFloor;
+  // Differentiate db instance vs floor string in arguments
+  if (arg1 && typeof arg1.prepare === "function") {
+    targetDb = arg1;
+    floor = arg2;
+  } else if (arg2 && typeof arg2.prepare === "function") {
+    targetDb = arg2;
+    floor = arg1;
   } else {
-    targetDb = defaultDb;
-    floor = dbOrFloor;
+    floor = arg1;
   }
 
   if (!targetDb) {
     throw new Error(
-      "Database connection not found. Pass db explicitly or ensure src/db/database.js exists."
+      "Database connection not found. Ensure src/db/database.js exists or pass db explicitly."
     );
   }
 
-  // If floor is not provided or null, return all lockers ordered by ID ascending
+  // If floor is omitted or null, return all lockers ordered by ID ascending
   if (floor === undefined || floor === null) {
     const stmt = targetDb.prepare(
       "SELECT id, name, floor, status FROM lockers ORDER BY id ASC"
@@ -59,7 +58,7 @@ function getLockers(dbOrFloor, maybeFloor) {
 
   const trimmedFloor = floor.trim();
 
-  // If floor is empty or whitespace-only, return empty array (or specific validation outcome)
+  // If floor is empty or whitespace-only, return empty array
   if (trimmedFloor.length === 0) {
     return [];
   }
@@ -79,7 +78,7 @@ function getLockers(dbOrFloor, maybeFloor) {
  * @returns {Array<{id: number, name: string, floor: string, status: string}>}
  */
 function searchByFloor(floor, db) {
-  return getLockers(db, floor);
+  return getLockers(floor, db);
 }
 
 module.exports = {

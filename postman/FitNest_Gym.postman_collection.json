@@ -1,0 +1,717 @@
+{
+  "info": {
+    "_postman_id": "f5a6b7c8-9d0e-1f2a-3b4c-5d6e7f8a9b0c",
+    "name": "FitNest Gym Locker Management System",
+    "description": "Comprehensive Postman test suite for FitNest Gym Locker Management System API covering Members, Lockers, Allotments, and the mandatory Transactional Audit Trail.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Members APIs",
+      "item": [
+        {
+          "name": "GET /api/members (List All)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response is an array', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(Array.isArray(jsonData)).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/members (Valid Member)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alex Johnson\",\n  \"email\": \"alex.johnson@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/members",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test('Member record created with ID and name', function () {",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData.name).to.eql('Alex Johnson');",
+                  "    pm.expect(jsonData.email).to.eql('alex.johnson@example.com');",
+                  "});",
+                  "pm.environment.set('member_id', jsonData.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/members/:id (Existing Member)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/{{member_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "{{member_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test('Member matches requested ID', function () {",
+                  "    pm.expect(jsonData.id).to.eql(Number(pm.environment.get('member_id')));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/members/:id (Absent Member - 404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/99999",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "99999"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404 Not Found', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test('Contains error message', function () {",
+                  "    pm.expect(jsonData).to.have.property('error');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/members/:id (Malformed ID - 400)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/abc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members", "abc"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test('Clear positive integer ID error', function () {",
+                  "    pm.expect(jsonData.error).to.include('positive integer');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/members (Duplicate Email - 409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Duplicate Alex\",\n  \"email\": \"alex.johnson@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/members",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 409 Conflict', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test('Conflict error for duplicate email', function () {",
+                  "    pm.expect(jsonData.error).to.include('already exists');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/members (Invalid Name - 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"   \",\n  \"email\": \"noname@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/members",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "members"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Lockers APIs",
+      "item": [
+        {
+          "name": "GET /api/lockers (List All)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/lockers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "lockers"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test('Response is an array', function () {",
+                  "    pm.expect(Array.isArray(jsonData)).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/lockers (Valid Locker)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Locker 101\",\n  \"floor\": \"Ground\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/lockers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "lockers"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test('Locker created with default status AVAILABLE', function () {",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.expect(jsonData.name).to.eql('Locker 101');",
+                  "    pm.expect(jsonData.floor).to.eql('Ground');",
+                  "    pm.expect(jsonData.status).to.eql('AVAILABLE');",
+                  "});",
+                  "pm.environment.set('locker_id', jsonData.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/lockers?floor=Ground (Filter by Floor)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/lockers?floor=Ground",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "lockers"],
+              "query": [
+                {
+                  "key": "floor",
+                  "value": "Ground"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test('All returned lockers are on Ground floor', function () {",
+                  "    jsonData.forEach(function (locker) {",
+                  "        pm.expect(locker.floor).to.eql('Ground');",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/lockers/:id (Existing Locker)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/lockers/{{locker_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "lockers", "{{locker_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test('Locker matches requested ID', function () {",
+                  "    pm.expect(jsonData.id).to.eql(Number(pm.environment.get('locker_id')));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT /api/lockers/:id (Update Locker)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Locker 101-Renovated\",\n  \"floor\": \"Ground\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/lockers/{{locker_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "lockers", "{{locker_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test('Locker name updated', function () {",
+                  "    pm.expect(jsonData.name).to.eql('Locker 101-Renovated');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /api/lockers (Validation Error - Missing Floor)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Locker 99\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/lockers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "lockers"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test('Validation error message', function () {",
+                  "    pm.expect(jsonData.error).to.include('Floor');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /api/lockers/:id (Delete Locker)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/lockers/{{locker_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "lockers", "{{locker_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Allotments APIs",
+      "item": [
+        {
+          "name": "GET /api/allotments (Joined Records)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/allotments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "allotments"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.test('Response is an array', function () {",
+                  "    pm.expect(Array.isArray(jsonData)).to.be.true;",
+                  "});",
+                  "if (jsonData.length > 0) {",
+                  "    pm.test('Joined record contains all contract fields', function () {",
+                  "        var row = jsonData[0];",
+                  "        pm.expect(row).to.have.property('id');",
+                  "        pm.expect(row).to.have.property('member_id');",
+                  "        pm.expect(row).to.have.property('member_name');",
+                  "        pm.expect(row).to.have.property('locker_id');",
+                  "        pm.expect(row).to.have.property('locker_name');",
+                  "        pm.expect(row).to.have.property('floor');",
+                  "        pm.expect(row).to.have.property('allotted_at');",
+                  "        pm.expect(row).to.have.property('returned_at');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Mandatory Audit Sequence",
+      "item": [
+        {
+          "name": "Step 1: CREATE Locker for Audit Test",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Audit-Seq-Locker\",\n  \"floor\": \"Second\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/lockers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "lockers"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Step 1: Status is 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.environment.set('audit_locker_id', jsonData.id);",
+                  "console.log('Created locker ID for audit sequence: ' + jsonData.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 2: UPDATE Same Locker",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Audit-Seq-Locker-Updated\",\n  \"floor\": \"Third\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/lockers/{{audit_locker_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "lockers", "{{audit_locker_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Step 2: Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 3: GET /api/audit (Verify UPDATE and CREATE Ordering)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/audit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "audit"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Step 3: Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var auditLogs = pm.response.json();",
+                  "var targetLockerId = Number(pm.environment.get('audit_locker_id'));",
+                  "",
+                  "pm.test('Audit log is an array with max 10 entries', function () {",
+                  "    pm.expect(Array.isArray(auditLogs)).to.be.true;",
+                  "    pm.expect(auditLogs.length).to.be.at.most(10);",
+                  "});",
+                  "",
+                  "// Filter audit logs for the target locker to assert sequence order",
+                  "var lockerLogs = auditLogs.filter(function (entry) {",
+                  "    return entry.locker_id === targetLockerId;",
+                  "});",
+                  "",
+                  "pm.test('Audit trail contains at least 2 entries for test locker', function () {",
+                  "    pm.expect(lockerLogs.length).to.be.at.least(2);",
+                  "});",
+                  "",
+                  "pm.test('Mandatory sequence verified: UPDATE appears before CREATE', function () {",
+                  "    pm.expect(lockerLogs[0].action).to.eql('UPDATE');",
+                  "    pm.expect(lockerLogs[1].action).to.eql('CREATE');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 4: DELETE Same Locker & Verify Audit Survival",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/lockers/{{audit_locker_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "lockers", "{{audit_locker_id}}"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Locker deleted successfully (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 5: GET /api/audit (Verify DELETE Row Persists)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/audit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "audit"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var auditLogs = pm.response.json();",
+                  "var targetLockerId = Number(pm.environment.get('audit_locker_id'));",
+                  "",
+                  "var latestEntry = auditLogs.find(function (entry) {",
+                  "    return entry.locker_id === targetLockerId;",
+                  "});",
+                  "",
+                  "pm.test('Audit row for deleted locker survives with DELETE action', function () {",
+                  "    pm.expect(latestEntry).to.not.be.undefined;",
+                  "    pm.expect(latestEntry.action).to.eql('DELETE');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
